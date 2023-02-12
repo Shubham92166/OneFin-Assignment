@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from collection.models import Collection, Movie
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.contrib.auth import get_user_model
 
 from rest_framework.permissions import BasePermission
 
@@ -21,7 +22,7 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
-class CollectionAV(APIView):
+class CollectionCrudAV(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -30,14 +31,17 @@ class CollectionAV(APIView):
             collection = Collection.objects.get(pk = collection_uuid)
         except Collection.DoesNotExist:
             print("Exception")
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            return Response({"Error" : "Record not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = CollectionSerializer(collection)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, collection_uuid):
         request.data['user'] = request.user.pk
-        collection = Collection.objects.get(pk = collection_uuid, user = request.user)
+        try:
+            collection = Collection.objects.get(pk = collection_uuid, user = request.user)
+        except Collection.DoesNotExist:
+            return Response({"Error" : "Record not found"}, status=status.HTTP_404_NOT_FOUND) 
         serializer = CollectionSerializer(collection, data=request.data)
 
         if serializer.is_valid():
@@ -56,7 +60,11 @@ class CollectionAV(APIView):
         return Response(status= status.HTTP_400_BAD_REQUEST)
         
     def delete(self, request, collection_uuid):
-        collection = Collection.objects.get(pk = collection_uuid, user = request.user)
+        try:
+            collection = Collection.objects.get(pk = collection_uuid, user = request.user)
+        except Collection.DoesNotExist:
+            return Response({"Error" : "Record not found"}, status=status.HTTP_404_NOT_FOUND)
+            
         collection.delete()
         response = {
             'data' : "deleted successfully"
@@ -127,6 +135,8 @@ class CreateCollectionAV(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 class RegisterAV(APIView):
+    '''Register a new user'''
+
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
