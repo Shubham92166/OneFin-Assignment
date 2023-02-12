@@ -37,10 +37,8 @@ class CollectionAV(APIView):
 
     def put(self, request, collection_uuid):
         request.data['user'] = request.user.pk
-        print(collection_uuid)
-        print(request.user.pk)
-        collection = Collection.objects.get(pk = collection_uuid, user = request.user.pk)
-        #print("collection", list(collection).initial_values())
+        collection = Collection.objects.get(pk = collection_uuid, user = request.user)
+        #print(list(collection).values())
         serializer = CollectionSerializer(collection, data=request.data)
 
         if serializer.is_valid():
@@ -53,7 +51,7 @@ class CollectionAV(APIView):
                 if movie_serializer.is_valid():
                     movie_serializer.save()
                     print("updated")
-                return Response(status= status.HTTP_204_NO_CONTENT)
+            return Response(status= status.HTTP_204_NO_CONTENT)
 
         print("exception")
         return Response(status= status.HTTP_200_OK)
@@ -70,12 +68,10 @@ class CreateCollectionAV(APIView):
 
     def post(self, request):
         request.data['user'] = request.user.pk
-        print(request.data)
+        
         serializer = CollectionSerializer(data = request.data)
-        #print(serializer.data)
         if serializer.is_valid():
             collection = serializer.save()
-            print("collection save")
            
             for movie_data in request.data.get('movies', []):
                 movie_data['collection'] = collection.uuid
