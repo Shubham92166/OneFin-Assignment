@@ -4,7 +4,8 @@ from rest_framework.test import APITestCase
 from django.contrib.auth.models import User
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
-import uuid, os
+import os
+
 User = get_user_model()
 
 class RegisterAVTestCase(APITestCase):
@@ -35,13 +36,17 @@ class RequestCounterMiddlewareTests(APITestCase):
         self.client = APIClient()
     
     def test_request_count_increment(self):
+        """
+        Asserts the request count is incremented succesully through the middleware
+        """
+
         response = self.client.get(reverse('request-count'))
         self.assertEqual(response.json()['requests'], 4)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_request_count_reset(self):
         """
-        Asserts that request counter is reset to 0
+        Asserts that request counter is reset to 0 through the middleware
         """
 
         response = self.client.post(reverse('request-count-reset'))
