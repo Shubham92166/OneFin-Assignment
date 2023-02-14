@@ -1,17 +1,26 @@
-import os, requests, time
+#Django
 from django.http import JsonResponse
+
+#rest framework
 from rest_framework.response import Response
-from dotenv import load_dotenv
 from rest_framework.decorators import APIView
 from collection.api.views import get_tokens_for_user
-from .serializers import UserSerializer
 from rest_framework import status
-import json
 
+#local Django
+from .serializers import UserSerializer
+
+
+#standard libraries
+from dotenv import load_dotenv
+import os
+import requests 
 
 load_dotenv()
 
 def get_movies_list(request):
+    """Helper method to call third party API. It also implements the retry mechanism"""
+
     API_USERNAME = os.getenv('API_USERNAME')
     API_PASSWORD = os.getenv('API_PASSWORD')
     
@@ -35,9 +44,11 @@ def get_movies_list(request):
     
 
 class RegisterAV(APIView):
-    '''Register a new user'''
+    '''Registers a new user'''
 
     def post(self, request):
+        """Creates a user and returs the access token as response"""
+
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()

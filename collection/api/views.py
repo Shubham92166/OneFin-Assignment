@@ -1,27 +1,27 @@
+#rest framework
 from rest_framework import status
 from rest_framework.decorators import APIView
-from .serializers import CollectionSerializer, MovieSerializer
 from rest_framework.response import Response
-from collection.models import Collection, Movie
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
-
 from rest_framework.permissions import BasePermission
 
+#local Django
+from .serializers import CollectionSerializer, MovieSerializer
+from collection.models import Collection, Movie
+
+#local imports
+from collection.views import get_top_genres_from_all_movies
+
 class IsAuthenticated(BasePermission):
+    """Return if user is authenticated"""
+
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated
 
 def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
+    """Returns the access and regresh token for the given in user"""
 
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
-
-
-def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
 
     return {
@@ -30,23 +30,14 @@ def get_tokens_for_user(user):
     }
 
 class CollectionCrudAV(APIView):
+    """Handles the CRUD operation for Collections"""
+
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, collection_uuid):
-        # try:
-        #     collection = list(Collection.objects.select_related("user").get(uuid=collection_uuid)).values()
-        #     movies = Movie.objects.select_related("user").filter(collection=collection)
-        # except Collection.DoesNotExist:
-        #     return None
-        # print(collection)
-        # print(movies)
-        # collection_serializer = None
-        # movies_serializer = None
-        # if collection:
-        #     collection_serializer = CollectionSerializer(collection)
-        # if movies:
-        #     movies_serializer = MovieSerializer(Movie)
+        """Handles the read operation for Collections"""
+
         try:
             collection = Collection.objects.get(uuid = collection_uuid, user = request.user.pk)
             movies = list(Movie.objects.filter(collection = collection_uuid, user = request.user.pk).values('description', 'title', 'genres'))
@@ -61,6 +52,8 @@ class CollectionCrudAV(APIView):
         return Response(response_payload, status=status.HTTP_200_OK)
 
     def put(self, request, collection_uuid):
+        """Handles the update operaton for Collection with the given collection uuid"""
+
         request.data['user'] = request.user.pk
         try:
             collection = Collection.objects.get(pk = collection_uuid, user = request.user)
@@ -82,6 +75,8 @@ class CollectionCrudAV(APIView):
         return Response(response_payload, status= status.HTTP_200_OK)
         
     def delete(self, request, collection_uuid):
+        """Handles the delete operation for the given collection uuid"""
+
         try:
             collection = Collection.objects.get(pk = collection_uuid, user = request.user)
         except Collection.DoesNotExist:
@@ -94,10 +89,14 @@ class CollectionCrudAV(APIView):
         return Response(response, status=status.HTTP_204_NO_CONTENT)
 
 class CreateCollectionAV(APIView):
+    """Handles the read and write operations for collections"""
+
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        """Creates a new collecton for the current user"""
+
         request.data['user'] = request.user.pk
         
         collection_serializer = CollectionSerializer(data = request.data)
@@ -120,54 +119,19 @@ class CreateCollectionAV(APIView):
         
 
     def get(self, request):
-        # all_collections = list(Collection.objects.filter(user = request.user.pk).values('title','description','uuid'))
-        # all_my_movies = list(Movie.objects.filter(user = request.user.pk).values())
-        # #print(all_collections)
-        
-        # all_user_data = Movie.objects.select_related("user", "collection")
-        # print(all_user_data.query)
-        # print("all", all_user_data.values())
-        # all_genres = all_user_data.values("collection_movie"."genres")
-        # #using the selected_related query for query optimisation
-        # #all_collections = list(Movie.objects.filter(user = request.user.pk).values('genres'))
-        # #print(all_data_for_user.values('title','description','uuid', 'genres'))
-        # # print(all_user_data.Collection.description)
-        # user_collections = all_user_data.values('title', 'uuid', 'description')
+        """Fetches all the collections for the current user"""
 
-        #user_genres = all_user_data.values('genres')
-        #print("select related query", all_data.query)
-        #print("All data", all_data)
-        #print("all", all_genres)
-
+        #used select_related query to optimize the query
         all_collections = list(Collection.objects.select_related("user").filter(user=request.user.pk).values('title','description','uuid'))
         all_my_movies = list(Movie.objects.select_related("user", "collection").filter(user=request.user.pk).values('genres'))
 
-        all_genres = []
-        for movie in all_my_movies:
-            genre = (movie.get('genres')).split(',')
-            all_genres.extend(genre)
-
-        genres_cleaned_data = []
-
-        for pair in all_my_movies:
-            genres_cleaned_data.extend(pair['genres'].split(','))
-
-        counter = {}
-        for genre in genres_cleaned_data:
-            counter[genre] = counter.get(genre, 0) + 1
-        
-        sorted_counter = sorted(counter.items(), key = lambda val : val[1], reverse=True)
-        
-        top_genre = []
-
-        for _ in range(3):
-            top_genre.append(sorted_counter[_][0])
+        top_genres = get_top_genres_from_all_movies(all_my_movies)
 
         response_payload = {
             "is_success" : True,
             "data": {
                 "collections": all_collections,
-                "favourite_genres" : top_genre 
+                "favourite_genres" : top_genres
             },
             }
         return Response(response_payload, status=status.HTTP_200_OK)

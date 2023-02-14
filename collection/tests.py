@@ -1,19 +1,26 @@
+#Django
 from django.test import TestCase
-from .models import Collection, Movie
 from django.urls import reverse
+from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model 
+
+#local Django
+from .models import Collection, Movie
+
+#rest framework
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth.models import User 
-from rest_framework.test import APITestCase, force_authenticate
-from collection.api.serializers import CollectionSerializer
-from collection.api.views import CreateCollectionAV
-from django.contrib.auth import get_user_model
+from rest_framework.test import APITestCase
 from rest_framework.test import APIClient
+
+#third party libraries
 import uuid
 
 User = get_user_model()
 
 class CreateCollectionAVTestCase(APITestCase):
+    """Tests the read and write operations for the collections"""
+
     def setUp(self):
         # create a user
         self.user = User.objects.create_user(username='testuser', password='testpassword')
@@ -123,6 +130,8 @@ class CreateCollectionAVTestCase(APITestCase):
 
 
 class CollectionCrudAVTestCase(TestCase):
+    """Test the CRUD operations for the Collections"""
+
     def setUp(self):
         self.client = APIClient()
 
@@ -321,6 +330,7 @@ class CollectionCrudAVTestCase(TestCase):
 
 
 class AllCollectionWithTopGenresTestCase(TestCase):
+    """Tests the fetch functionality of all the collections with top genres"""
 
     def setUp(self):
         self.client = APIClient()

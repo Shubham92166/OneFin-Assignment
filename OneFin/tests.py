@@ -1,14 +1,19 @@
+#Django
 from django.urls import reverse
+from django.contrib.auth import get_user_model
+
+#rest framework
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth.models import User
-from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
+
+#standard libraries
 import os
 
 User = get_user_model()
 
 class RegisterAVTestCase(APITestCase):
+    """Tests the User registration functionality"""
     
     #test registration with valid data
     def test_register_valid(self):
@@ -32,6 +37,8 @@ class RegisterAVTestCase(APITestCase):
 
 
 class RequestCounterMiddlewareTests(APITestCase):
+    """Tests the custom middleware used to increment or reset the request counter"""
+
     def setUp(self):
         self.client = APIClient()
     
@@ -54,6 +61,8 @@ class RequestCounterMiddlewareTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 class MoviesListTestCase(APITestCase):
+    """Tests the third API"""
+
     def setUp(self):
         self.API_USERNAME = os.getenv('API_USERNAME')
         self.API_PASSWORD = os.getenv('API_PASSWORD')
